@@ -86,14 +86,15 @@ def proxy_thread(conn, client_addr):
 
 
 
-def start():
+def start(port):
 
-    if (len(sys.argv) < 2):
-        print ("usage: proxy <port>")
-        sys.exit(1)
+    if DEBUG:
+        if (len(sys.argv) < 2):
+            print ("usage: proxy <port>")
+            sys.exit(1)
+        port = int(sys.argv[1])
 
     host = ''               
-    port = int(sys.argv[1])
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -120,4 +121,4 @@ def start():
 
 
 if __name__ == '__main__':
-    start()
+    start(int(sys.argv[1]))
