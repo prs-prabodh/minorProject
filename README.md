@@ -1,4 +1,4 @@
-# minorProject
+# Minor Project - Mar 2019
 A cloud based cyber immune system based on machine learning techniques
 
 ## Usage
