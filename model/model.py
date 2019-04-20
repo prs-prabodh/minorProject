@@ -10,3 +10,8 @@ def getPrediction(data):
     prediction = model.predict(data)
 
     return prediction
+
+def analyze(packet):
+    # analyze packet
+
+    return True, 'None', 'Nil'
