@@ -10,6 +10,7 @@ sys.path.append('/proxy')
 
 MAX_CONNECTIONS = 50
 BUFFER_SIZE = 4096
+SOCKET_TIMEOUT = 5
 DEBUG = False
 
 def parseRequest(request):
@@ -25,9 +26,11 @@ def parseRequest(request):
     port = int(address[1].split(':')[1])
     path = address[2]
 
-    request = (requestType + ' ' + path + ' HTTP/1.1\r\n\r\n').encode()
+    request = requestType + ' ' + path + ' HTTP/1.0\r\nHost: ' + host + '\r\n\r\n'
+    # print('Request - \n', request, sep='')
+    # request = 'GET /api/users/2 HTTP/1.0\r\nHost: www.reqres.in\r\n\r\n'
 
-    return host, port, request
+    return host, port, request.encode()
 
 def proxy_thread(conn, client_addr):
 
@@ -45,7 +48,7 @@ def proxy_thread(conn, client_addr):
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(5)
+        s.settimeout(SOCKET_TIMEOUT)
         s.connect((webserver, port))
         s.send(request)
 
