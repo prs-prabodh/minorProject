@@ -6,7 +6,7 @@ A cloud based cyber immune system based on machine learning techniques
 ```bash
 sudo python3 main.py 9876
 ```
-* Postman Testing - Send GET request to `localhost:port` with body formatted in the following way
+* Postman Testing - Send `GET` request to `localhost:port` with body formatted in the following way
 ```bash
 GET www.reqres.in:80 /api/users/2
 GET www.google.co.in:80 /
