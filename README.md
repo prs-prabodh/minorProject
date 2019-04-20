@@ -1,7 +1,7 @@
 # minorProject
 A cloud based cyber immune system based on machine learning techniques
 
-##Usage
+## Usage
 * Current Request format in body - GET www.google.co.in:80 /
 * Launch - Call `ProxyServer.py` script from proxy with the `port` parameter passed as an argument from terminal
 ```bash
