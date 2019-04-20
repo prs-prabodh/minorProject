@@ -8,3 +8,12 @@ A cloud based cyber immune system based on machine learning techniques
 cd proxy
 sudo python3 ProxyServer.py 9876
 ```
+## Dependencies
+* Scapy 
+```bash
+sudo python3 -m pip install --pre scapy[basic]
+```
+* Sklearn
+```bash
+sudo python3 -m pip install sklearn
+```
