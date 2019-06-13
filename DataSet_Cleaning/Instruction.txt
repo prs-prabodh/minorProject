@@ -1,0 +1,10 @@
+Some Points :
+1)   Some csv haves all columns which are of the days wednesday,thursday,tuesday .All the columns are Flow id,destination port, source port,Timestamp,etc.So they all are combined in a single file 'all_c.csv'
+
+2)  Dataset of days friday and monday doesnot have those columns so they all are combined in one file ' all_i.csv '.
+
+3) Change the path according to the need .I explicity set the path.
+
+4) Link for Dataset is
+
+ https://drive.google.com/drive/folders/16-wMSUM9JGtcJp9E8qZWBy89Jfc84jgE?usp=sharing
