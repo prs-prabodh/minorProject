@@ -1,7 +1,10 @@
 from sklearn.neighbors import KNeighborsClassifier
 import joblib as jl
+import os
 
-trained_model = jl.load('trained_model.pkl')
+# print(os.getcwd())
+
+trained_model = jl.load('model/trained_model.pkl')
 
 
 def trainModel(data, label):
