@@ -4,7 +4,7 @@ import os
 
 # print(os.getcwd())
 
-trained_model = jl.load('model/trained_model.pkl')
+trained_model = jl.load('trained_model.pkl')
 
 
 def trainModel(data, label):

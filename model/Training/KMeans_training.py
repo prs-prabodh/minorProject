@@ -45,4 +45,4 @@ for i in range(len(X)):
 
 print("KMeans Accuracy: ", correctKmeans/len(X))
 print("KNN Accuracy: ", correctKnn/len(X))
-jl.dump(knn, 'trained_model.pkl')
+jl.dump(knn, '../trained_model.pkl')
