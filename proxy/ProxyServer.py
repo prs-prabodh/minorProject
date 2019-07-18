@@ -1,17 +1,19 @@
+from sniffer import sniffer as packetHandler
+from model import model as ai
 import os
 import sys
 from threading import Thread
 import socket
+import time
 
 sys.path.append('../')
-from model import model as ai
-from sniffer import sniffer as packetHandler
 sys.path.append('/proxy')
 
 MAX_CONNECTIONS = 50
 BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 5
-DEBUG = False
+DEBUG = True
+
 
 def parseRequest(request):
     if DEBUG:
@@ -32,6 +34,7 @@ def parseRequest(request):
 
     return host, port, request.encode()
 
+
 def proxy_thread(conn, client_addr):
 
     request = conn.recv(BUFFER_SIZE)
@@ -44,7 +47,7 @@ def proxy_thread(conn, client_addr):
     else:
         webserver, port, request = parseRequest(request)
 
-    print ("Connect to:", webserver, port)
+    print("Connect to:", webserver, port)
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -55,12 +58,21 @@ def proxy_thread(conn, client_addr):
         while True:
             data = s.recv(BUFFER_SIZE)
             print("Data received = ", len(data))
-
             packet = packetHandler.Ether(data)
+            packetHandler.wrpcap("raw_data.pcap", packet)
+            if DEBUG:
+                print("Pcap Written!")
 
-            safe, threat, threat_level = ai.analyze(packet) 
+                ###########################################################################################
+                ##   Extract CSV file data put into 'packet_data' used below in ai.analyze(packet_data)  ##
+                ##   packet_data should be in form of 2D array. [[], [], [], []]                         ##
+                ###########################################################################################
+
+            safe = ai.analyze(packet_data)
+            time.sleep(2)
             if not safe:
-                threat_report = 'Unsafe Packet. Report: \nThreat type - ' + threat + '\nThreat level - ' + threat_level
+                threat_report = 'Unsafe Packet. Report: \nThreat type - ' + \
+                    threat + '\nThreat level - ' + threat_level
                 raise Exception(threat_report)
 
             if (len(data) > 0):
@@ -77,27 +89,25 @@ def proxy_thread(conn, client_addr):
             s.close()
         if conn:
             conn.close()
-        print (e)
+        print(e)
         return
     except Exception as e:
-        if s:
-            s.close()
-        if conn:
-            conn.close()
+        s.close()
+        conn.close()
         print(e)
         return
 
 
-
 def start(port):
 
+    # print(len(sys.argv))
     if DEBUG:
         if (len(sys.argv) < 2):
-            print ("usage: proxy <port>")
+            print("usage: proxy <port>")
             sys.exit(1)
         port = int(sys.argv[1])
 
-    host = ''               
+    host = ''
 
     try:
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -108,7 +118,7 @@ def start(port):
     except socket.error as e:
         if s:
             s.close()
-        print ("Could not open socket:", e)
+        print("Could not open socket:", e)
         sys.exit(1)
 
     while True:

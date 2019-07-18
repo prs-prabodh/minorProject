@@ -1,2 +1,4 @@
 proxy/test.py
 __pycache__
+*.csv
+*.pcap
