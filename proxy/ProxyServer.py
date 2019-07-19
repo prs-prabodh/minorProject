@@ -5,22 +5,28 @@ import sys
 from threading import Thread
 import socket
 import time
+import pyshark
+import subprocess
 
 sys.path.append('../')
 sys.path.append('/proxy')
 
+pendingPackets = []
+totalPackets = 0
+
 MAX_CONNECTIONS = 50
 BUFFER_SIZE = 4096
 SOCKET_TIMEOUT = 5
-DEBUG = True
+DEBUG = False
 
 
-def parseRequest(request):
+def parseRequest(request, telnet=False):
     if DEBUG:
         print("Not ready for deployment. Set DEBUG to True!")
         sys.exit(1)
 
-    request = request.decode()
+    if not telnet:
+        request = request.decode()
     request = request.split('\n')[-1]
     address = request.split(' ')
     requestType = address[0]
@@ -35,72 +41,116 @@ def parseRequest(request):
     return host, port, request.encode()
 
 
-def proxy_thread(conn, client_addr):
+def handle_packet(packet):
+    global pendingPackets, totalPackets
+    pendingPackets.append(packet)
+    totalPackets += 1
 
-    request = conn.recv(BUFFER_SIZE)
-    print(request)
+    if len(pendingPackets) >= 100:
+        packetHandler.wrpcap('raw_data.pcap', pendingPackets)
+        pendingPackets = []
 
-    if DEBUG:
-        webserver = 'www.google.co.in'
-        port = 80
-        request = 'GET / HTTP/1.1\r\n\r\n'.encode()
-    else:
-        webserver, port, request = parseRequest(request)
 
-    print("Connect to:", webserver, port)
+def proxy_thread(conn, client_addr, telnet=False):
 
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        s.settimeout(SOCKET_TIMEOUT)
-        s.connect((webserver, port))
-        s.send(request)
-
+    raw_data = ''
+    if telnet:
+        clientRequest = ''
         while True:
-            data = s.recv(BUFFER_SIZE)
-            print("Data received = ", len(data))
-            packet = packetHandler.Ether(data)
-            packetHandler.wrpcap("raw_data.pcap", packet)
-            if DEBUG:
-                print("Pcap Written!")
-
-                ###########################################################################################
-                ##   Extract CSV file data put into 'packet_data' used below in ai.analyze(packet_data)  ##
-                ##   packet_data should be in form of 2D array. [[], [], [], []]                         ##
-                ###########################################################################################
-
-            safe = ai.analyze(packet_data)
-            time.sleep(2)
-            if not safe:
-                threat_report = 'Unsafe Packet. Report: \nThreat type - ' + \
-                    threat + '\nThreat level - ' + threat_level
-                raise Exception(threat_report)
-
-            if (len(data) > 0):
-                if(conn):
-                    print('Client socket live on server')
-                sent = conn.send(data)
-                print("Data sent = ", sent)
+            # p = subprocess.Popen(
+            #     ['RawCap.exe', '-c', '10', '127.0.0.1', 'dumpfile.pcap'], stdout=subprocess.PIPE, shell=True)
+            packetHandler.sniff(timeout=0.05, prn=handle_packet)
+            request = conn.recv(BUFFER_SIZE)
+           # (output, err) = p.communicate()
+           # p_status = p.wait()
+            if(raw_data == ''):
+                raw_data = request
             else:
+                raw_data += (request)
+            if(len(request) == 1):
+                data = chr(ord(request))
+                print(data)
+            if(request == b'\r\n' or request.decode().split(' ')[-1] == '\r\n'):
                 break
-        s.close()
-        conn.close()
-    except socket.error as e:
-        if s:
-            s.close()
-        if conn:
-            conn.close()
-        print(e)
-        return
-    except Exception as e:
-        s.close()
-        conn.close()
-        print(e)
-        return
+            if(clientRequest == ''):
+                clientRequest = data
+            else:
+                clientRequest += (data)
+        packetHandler.wrpcap('raw_data.pcap', pendingPackets)
+        print(clientRequest, raw_data, packetHandler.Ether(raw_data))
+    else:
+
+        # p = subprocess.Popen(
+        # ['RawCap.exe', '-c', '50', '127.0.0.1', 'dumpfile.pcap'], stdout=subprocess.PIPE, shell=True)
+        packetHandler.sniff(timeout=0.5, prn=handle_packet)
+        clientRequest = conn.recv(BUFFER_SIZE)
+        # (output, err) = p.communicate()
+        # p_status = p.wait()
+
+        print(clientRequest)
+        packetHandler.wrpcap('raw_data.pcap', pendingPackets)
+
+    # if DEBUG:
+    #     webserver = 'www.google.co.in'
+    #     port = 80
+    #     request = 'GET / HTTP/1.1\r\n\r\n'.encode()
+    # else:
+    #     webserver, port, request = parseRequest(clientRequest, telnet)
+
+    # print("Connect to:", webserver, port)
+
+    # try:
+    #     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #     s.settimeout(SOCKET_TIMEOUT)
+    #     s.connect((webserver, port))
+    #     s.send(request)
+
+    #     entireData = ''
+    #     while True:
+    #         data = s.recv(BUFFER_SIZE)
+    #         packetHandler.sniff(timeout=0.25, filter="ip", prn=handle_packet)
+    #         print("Data received = ", len(data))
+    #         if DEBUG:
+    #             print("Pcap Written!")
+
+    #             ###########################################################################################
+    #             ##   Extract CSV file data put into 'packet_data' used below in ai.analyze(packet_data)  ##
+    #             ##   packet_data should be in form of 2D array. [[], [], [], []]                         ##
+    #             ###########################################################################################
+
+    #         # safe = ai.analyze(packet_data)
+    #         # time.sleep(2)
+    #         # if not safe:
+    #         #     threat_report = 'Unsafe Packet. Report: \nThreat type - ' + \
+    #         #         threat + '\nThreat level - ' + threat_level
+    #         #     raise Exception(threat_report)
+
+    #         if (len(data) > 0):
+    #             if(conn):
+    #                 print('Client socket live on server')
+    #             sent = conn.send(data)
+    #             print("Data sent = ", sent)
+    #         else:
+    #             break
+    #     s.close()
+    #     conn.close()
+    # except socket.error as e:
+    #     if s:
+    #         s.close()
+    #     if conn:
+    #         conn.close()
+    #     print(e)
+    #     return
+    # except Exception as e:
+    #     s.close()
+    #     conn.close()
+    #     print(e)
+    #     return
 
 
-def start(port):
+def start(port, telnet=False):
 
-    # print(len(sys.argv))
+    # print(len(sys.argv), telnet)
     if DEBUG:
         if (len(sys.argv) < 2):
             print("usage: proxy <port>")
@@ -127,7 +177,7 @@ def start(port):
 
             print("===> Connected to client")
 
-            Thread(proxy_thread(conn, client_addr)).start()
+            Thread(proxy_thread(conn, client_addr, telnet)).start()
         except KeyboardInterrupt:
             s.close()
             sys.exit(0)
